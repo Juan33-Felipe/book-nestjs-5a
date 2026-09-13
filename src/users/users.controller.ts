@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 
 interface User {
     id: String;
@@ -86,5 +86,65 @@ export class UsersController {
             return { result: data?.email };
         }
         return { result: 'usuario no encontrado' };
+    }
+
+    @Post()
+    createUser(@Body() userPayload: User) {
+        console.log('.:: user: ', userPayload)
+        //user.id = no debe existir 
+        //user.correo = no debe existir
+        //si el usuario existe -> retornar "el usuario ya se encuentra registrado"
+        const data = this.users.find((user) => user.name === userPayload.id || user.name === userPayload.email);
+        if (data) {
+            return {
+                msg: 'el usuario ya se encuentra registrado'
+            }
+        }
+        this.users.push(userPayload);
+        return {
+            msg: "usuario creado",
+            data: userPayload
+        }
+    }
+
+    @Delete(':id')
+    deleteUser(@Param('id') id: string) {
+
+        console.log('.:: userID: ', id);
+        const position = this.users.findIndex((user) => user.id === id);
+        console.log('.:: position: ', position);
+        if (position === -1) {
+            return {
+                msg: "No existe el ID"
+            }
+        }
+        this.users.splice(position, 1);
+        return {
+            msg: 'usuario eliminado'
+        };
+    }
+
+    @Put(':id')
+    updateUser(@Param('id') id: string, @Body() userChanges: User) {
+        console.log(',:: UserID Update', id)
+        console.log(',:: Changes', userChanges)
+
+        const position = this.users.findIndex((user) => user.id === id);
+        if (position === -1) {
+            return {
+                msg: "No existe el ID"
+            }
+        }
+
+        const existingUser = this.users[position];
+        console.log(',:: usuario existente', existingUser)
+
+        const updateUser = { ...existingUser, ...userChanges };
+        this.users[position] = updateUser;
+
+        return {
+            msg: "Usuario actualizado con exito",
+            data: updateUser
+        }
     }
 }

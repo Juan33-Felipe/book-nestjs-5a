@@ -1,4 +1,4 @@
-import { Controller, Param, Get } from '@nestjs/common';
+import { Controller, Param, Get, Post, Body, Delete, Put } from '@nestjs/common';
 
 export interface Producto {
     id: string;
@@ -52,73 +52,90 @@ export class ProductosController {
         { id: "24", name: "Agua Mineral", category: "Bebidas", vencimiento: false, cantidad: 60 }
     ];
 
-
-    @Get(":categoria")
-    getProductoByCategoria() {
-        const bebidas: Producto[] = [];
-        const lacteos: Producto[] = [];
-        const panaderia: Producto[] = [];
-        const frutas: Producto[] = [];
-        const granos: Producto[] = [];
-        const aceites: Producto[] = [];
-        const carnes: Producto[] = [];
-        const enlatados: Producto[] = [];
-        for (const producto of this.productos) {
-            if (producto.category === "Bebidas") {
-                bebidas.push(producto);
-            } else if (producto.category === "Lácteos") {
-                lacteos.push(producto);
-            } else if (producto.category === "Panadería") {
-                panaderia.push(producto);
-            } else if (producto.category === "Frutas") {
-                frutas.push(producto);
-            } else if (producto.category === "Granos") {
-                granos.push(producto);
-            } else if (producto.category === "Aceites") {
-                aceites.push(producto);
-            } else if (producto.category === "Carnes") {
-                carnes.push(producto);
-            } else if (producto.category === "Enlatados") {
-                enlatados.push(producto);
-            }
-        }
-
-        return {
-            "Esta son las bebidas": bebidas,
-            "Esta son los lácteos": lacteos,
-            "Esta es la panadería": panaderia,
-            "Esta son las frutas": frutas,
-            "Esta son los granos": granos,
-            "Esta son los aceites": aceites,
-            "Esta son las carnes": carnes,
-            "Esta son los enlatados": enlatados
-        };
-    }
+    // --- Primera entrega --- //
 
     @Get()
-    getProducto() {
+    getProductos() {
         return this.productos;
     }
 
-    @Get(":vencimiento")
-    getProductoByVencimiento() {
-        const data = this.productos.filter((productos) => productos.vencimiento === false);
+    @Get("sin-stock")
+    getProductoSinStock() {
+        const data = this.productos.filter((producto) => producto.cantidad === 0);
         return data;
     }
 
+    @Get("vencimiento")
+    getProductoByVencimiento() {
+        const data = this.productos.filter((producto) => producto.vencimiento === false);
+        return data;
+    }
 
-    @Get("sin-stock")
-    getProductoSinStock() {
-        const data = this.productos.filter(productos => productos.cantidad === 0);
+    @Get("categoria/:category")
+    getProductosByCategory(@Param("category") category: string) {
+        const data = this.productos.filter((producto) => producto.category.toLowerCase() === category.toLowerCase());
         return data;
     }
 
     @Get(":id")
     getProductoById(@Param('id') id: string) {
-        console.log('.:: Producto ID: ', id)
-        const data = this.productos.find((productos) => productos.id === id);
-        console.log('.:: Producto buscado: ', data)
+        console.log('.:: Producto ID: ', id);
+        const data = this.productos.find((producto) => producto.id === id);
+        console.log('.:: Producto buscado: ', data);
         return data;
     }
 
+    // --- Segunda entrega --- //
+
+    @Post()
+    createProducto(@Body() nuevoProducto: Producto) {
+        const productoExistente = this.productos.find(
+            (producto) => producto.id === nuevoProducto.id || producto.name === nuevoProducto.name
+        );
+
+        if (productoExistente) {
+            return {
+                message: "El producto con ese ID o nombre ya existe."
+            };
+        }
+
+        this.productos.push(nuevoProducto);
+        return {
+            message: "Producto creado exitosamente.",
+            data: nuevoProducto
+        };
+    }
+
+    @Delete(":id")
+    deleteProducto(@Param("id") id: string) {
+        const position = this.productos.findIndex((producto) => producto.id === id);
+
+        if (position === -1) {
+            return {
+                message: "No se encontró el producto con ese ID."
+            };
+        }
+
+        this.productos.splice(position, 1);
+        return {
+            message: "Producto eliminado exitosamente."
+        };
+    }
+
+    @Put(":id")
+    updateProducto(@Param("id") id: string, @Body() productoActualizado: Producto) {
+        const position = this.productos.findIndex((producto) => producto.id === id);
+
+        if (position === -1) {
+            return {
+                message: "No se encontró el producto con ese ID."
+            };
+        }
+
+        this.productos[position] = { ...this.productos[position], ...productoActualizado };
+        return {
+            message: "Producto actualizado exitosamente.",
+            data: this.productos[position]
+        };
+    }
 }
